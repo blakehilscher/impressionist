@@ -3,7 +3,7 @@ require 'digest/sha2'
 module ImpressionistController
   module ClassMethods
     def impressionist(opts={})
-      before_filter { |c| c.impressionist_subapp_filter(opts[:actions], opts[:unique])}
+      after_filter { |c| c.impressionist_subapp_filter(opts[:actions], opts[:unique])}
     end
   end
 
@@ -68,6 +68,7 @@ module ImpressionistController
         :controller_name => controller_name,
         :action_name => action_name,
         :user_id => user_id,
+        :message => request.fullpath,
         :request_hash => @impressionist_hash,
         :session_hash => session_hash,
         :ip_address => request.remote_ip,
@@ -77,9 +78,10 @@ module ImpressionistController
 
     # creates a statment hash that contains default values for creating an impression.
     def direct_create_statement(query_params={})
+      impressionable = instance_variable_get "@#{controller_name.singularize}"
       query_params.reverse_merge!(
         :impressionable_type => controller_name.singularize.camelize,
-        :impressionable_id=> params[:id]
+        :impressionable_id=> impressionable.try(:id)
         )
       associative_create_statement(query_params)
     end
